@@ -11,8 +11,10 @@ trait Connector {
 
   def testConnection(): ConnectorResponse[Unit]
 
-  def listTables(): ConnectorResponse[Seq[TableModel]] = ???
+  def listTables(): ConnectorResponse[Seq[TableModel]]
 
-  def listFields(table: String): ConnectorResponse[Seq[FieldModel]] = ???
+  def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = ???
+
+  def listFields(table: String): ConnectorResponse[Seq[FieldModel]]
 
 }
