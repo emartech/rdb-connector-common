@@ -19,6 +19,6 @@ trait Connector {
 
   def listFields(table: String): ConnectorResponse[Seq[FieldModel]]
 
-  def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[String, NotUsed]] = ???
+  def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
 
 }
