@@ -1,5 +1,7 @@
 package com.emarsys.rdb.connector.common.models
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors._
 
@@ -13,8 +15,10 @@ trait Connector {
 
   def listTables(): ConnectorResponse[Seq[TableModel]]
 
-  def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = ???
+  def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]]
 
   def listFields(table: String): ConnectorResponse[Seq[FieldModel]]
+
+  def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[String, NotUsed]] = ???
 
 }

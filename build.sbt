@@ -8,6 +8,8 @@ scalaVersion := "2.12.3"
 libraryDependencies ++= {
   val scalaTestV = "3.0.1"
   Seq(
-    "org.scalatest" %% "scalatest" % scalaTestV % "test"
+    "com.typesafe.akka" %% "akka-stream" % "2.5.6",
+    "com.typesafe.akka" %% "akka-stream-testkit" % "2.5.6" % Test,
+    "org.scalatest" %% "scalatest" % scalaTestV % Test
   )
 }
