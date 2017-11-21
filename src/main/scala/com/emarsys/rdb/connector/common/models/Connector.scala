@@ -19,8 +19,12 @@ trait Connector {
 
   def listFields(table: String): ConnectorResponse[Seq[FieldModel]]
 
+  def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean] = ???
+
   def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[Seq[String], NotUsed]]
 
-  def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean] = ???
+  def rawSelect(rawSql: String, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
+
+  def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = ???
 
 }
