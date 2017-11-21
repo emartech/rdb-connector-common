@@ -19,7 +19,7 @@ trait Connector {
 
   def listFields(table: String): ConnectorResponse[Seq[FieldModel]]
 
-  def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean] = ???
+  def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean]
 
   def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[Seq[String], NotUsed]]
 
