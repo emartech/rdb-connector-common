@@ -28,3 +28,7 @@ trait Connector {
   def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = ???
 
 }
+
+trait ConnectorCompanion {
+  def meta(): MetaData
+}
