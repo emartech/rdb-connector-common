@@ -29,6 +29,8 @@ trait Connector {
 
   def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
 
+  def projectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
+
 }
 
 trait ConnectorCompanion {
