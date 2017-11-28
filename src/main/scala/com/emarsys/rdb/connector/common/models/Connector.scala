@@ -23,9 +23,11 @@ trait Connector {
 
   def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[Seq[String], NotUsed]]
 
-  def rawSelect(rawSql: String, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
+  def rawSelect(rawSql: String, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]]
 
-  def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = ???
+  def validateRawSelect(rawSql: String): ConnectorResponse[Unit]
+
+  def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
 
 }
 
