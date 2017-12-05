@@ -3,11 +3,16 @@ package com.emarsys.rdb.connector.common.models
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.emarsys.rdb.connector.common.ConnectorResponse
+import com.emarsys.rdb.connector.common.models.DataManipulation.UpdateDefinition
+import com.emarsys.rdb.connector.common.models.Errors.FailedValidation
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors._
+import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 trait Connector {
+
+  implicit val executionContext: ExecutionContext
 
   def close(): Future[Unit]
 
@@ -27,9 +32,18 @@ trait Connector {
 
   def validateRawSelect(rawSql: String): ConnectorResponse[Unit]
 
-  def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
+  def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]]
 
-  def projectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Source[Seq[String], NotUsed]] = ???
+  def projectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Source[Seq[String], NotUsed]]
+
+  protected def rawUpdate(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = ???
+
+  final def update(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = {
+    ValidateDataManipulation.validateUpdateDefinition(tableName, definitions, this).flatMap {
+      case ValidationResult.Valid => rawUpdate(tableName, definitions)
+      case validationResult => Future.successful(Left(FailedValidation(validationResult)))
+    }
+  }
 
 }
 

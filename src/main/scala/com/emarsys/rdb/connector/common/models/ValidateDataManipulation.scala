@@ -1,0 +1,147 @@
+package com.emarsys.rdb.connector.common.models
+
+import com.emarsys.rdb.connector.common.models.DataManipulation.UpdateDefinition
+import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
+import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
+
+import scala.concurrent.{ExecutionContext, Future}
+
+trait ValidateDataManipulation {
+  private type DeferredValidation = () => Future[ValidationResult]
+
+  val maxRows: Int
+
+  def validateUpdateDefinition(tableName: String, updateData: Seq[UpdateDefinition], connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    runValidations(Seq(
+      () => validateUpdateFormat(updateData),
+      () => validateTableIsNotAView(tableName, connector),
+      () => validateUpdateFields(tableName, updateData, connector)
+    ))
+  }
+
+  private def runValidations(validations: Seq[DeferredValidation])(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    if (validations.isEmpty) {
+      Future.successful(ValidationResult.Valid)
+    } else {
+      val validation = validations.head.apply()
+
+      validation flatMap {
+        case ValidationResult.Valid =>
+          runValidations(validations.tail)
+        case failedValidationResult =>
+          Future.successful(failedValidationResult)
+      }
+    }
+  }
+
+  private def validateTableIsNotAView(tableName: String, connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    connector.listTables().map {
+      case Right(tableModels) =>
+        val tableNameIsAView = tableModels.exists { tableModel =>
+          tableModel.name == tableName && tableModel.isView
+        }
+        if (tableNameIsAView)
+          ValidationResult.InvalidOperationOnView
+        else
+          ValidationResult.Valid
+
+      case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
+      case Left(_) => ValidationResult.ValidationFailed("Something went wrong")
+    }
+  }
+
+  private def validateFieldExistence(tableName: String, updateData: Seq[UpdateDefinition], connector: Connector)(implicit executionContext: ExecutionContext) : Future[ValidationResult] = {
+    if(updateData.isEmpty){
+      Future.successful(ValidationResult.NonExistingTable)
+    } else {
+      connector.listFields(tableName).map {
+        case Right(columns) =>
+          val keyFields = updateData.head.search.keySet ++ updateData.head.update.keySet
+          val nonExistingFields = keyFields.diff(columns.map(_.name).toSet)
+          if (nonExistingFields.isEmpty) {
+            ValidationResult.Valid
+          } else {
+            ValidationResult.NonExistingFields(nonExistingFields)
+          }
+        case _ =>
+          ValidationResult.NonExistingTable
+      }
+    }
+  }
+
+
+  private def validateUpdateFields(tableName: String, updateData: Seq[UpdateDefinition], connector: Connector)(implicit executionContext: ExecutionContext) : Future[ValidationResult] = {
+    validateFieldExistence(tableName, updateData, connector) flatMap {
+      case ValidationResult.Valid =>
+        validateIndices(tableName, updateData.head.search.keySet, connector)
+      case failedValidationResult =>
+        Future.successful(failedValidationResult)
+    }
+  }
+
+  private def validateIndices(tableName: String, keyFields: Set[String], connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    connector.isOptimized(tableName, keyFields.toList).map {
+      case Right(true) => ValidationResult.Valid
+      case Right(false) => ValidationResult.NoIndexOnFields
+      case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
+      case Left(_) => ValidationResult.ValidationFailed("Something went wrong")
+    }
+  }
+
+  private def validateUpdateFormat(updateData: Seq[UpdateDefinition]) = Future.successful {
+    if (updateData.size > maxRows) {
+      ValidationResult.TooManyRows
+    } else if (updateData.isEmpty) {
+      ValidationResult.EmptyData
+    } else if (hasEmptyCriteria(updateData)) {
+      ValidationResult.EmptyCriteria
+    } else if (hasEmptyData(updateData)) {
+      ValidationResult.EmptyData
+    } else if (!areAllCriteriaFieldsTheSame(updateData)) {
+      ValidationResult.DifferentFields
+    } else if (!areAllUpdateFieldsTheSame(updateData)) {
+      ValidationResult.DifferentFields
+    } else {
+      ValidationResult.Valid
+    }
+  }
+
+  private def areAllCriteriaFieldsTheSame(data: Seq[UpdateDefinition]) = {
+    val firstRecordCriteriaKeySet = data.head.search.keySet
+    data.forall(_.search.keySet == firstRecordCriteriaKeySet)
+  }
+
+  private def areAllUpdateFieldsTheSame(data: Seq[UpdateDefinition]) = {
+    val firstRecordUpdateKeySet = data.head.update.keySet
+    data.forall(_.update.keySet == firstRecordUpdateKeySet)
+  }
+
+  private def hasEmptyCriteria(updateData: Seq[UpdateDefinition]) = updateData.exists(_.search.isEmpty)
+
+  private def hasEmptyData(updateData: Seq[UpdateDefinition]) = updateData.exists(_.update.isEmpty)
+}
+
+object ValidateDataManipulation extends ValidateDataManipulation {
+
+  val maxRows = 1000
+
+  sealed trait ValidationResult
+
+  object ValidationResult {
+    case object Valid extends ValidationResult
+    case object DifferentFields extends ValidationResult
+    case object EmptyData extends ValidationResult
+    case object TooManyRows extends ValidationResult
+    case object NonExistingTable extends ValidationResult
+    case class NonExistingFields(fields: Set[String]) extends ValidationResult
+
+    case object NoIndexOnFields extends ValidationResult
+
+    case object EmptyCriteria extends ValidationResult
+
+    case object InvalidOperationOnView extends ValidationResult
+
+    case class ValidationFailed(message: String) extends ValidationResult
+  }
+
+}
