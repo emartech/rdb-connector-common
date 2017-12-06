@@ -48,6 +48,8 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     override protected def rawUpdate(tableName: String, definitions: Seq[DataManipulation.UpdateDefinition]): ConnectorResponse[Int] = Future.successful(Right(4))
 
     override protected def rawInsertData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
+
+    override protected def rawReplaceData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
   }
 
   "#update" should {
@@ -76,6 +78,19 @@ class ConnectorSpec extends WordSpecLike with Matchers {
       Await.result(myConnector.insertIgnore(viewName, records), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
     }
 
+  }
+
+  "#replace" should {
+
+    "return ok" in {
+      val records = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
+      Await.result(myConnector.replaceData(tableName, records), defaultTimeout) shouldBe Right(4)
+    }
+
+    "return validation error" in {
+      val records = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
+      Await.result(myConnector.replaceData(viewName, records), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
+    }
   }
 
 }

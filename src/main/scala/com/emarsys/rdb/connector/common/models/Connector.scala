@@ -40,6 +40,9 @@ trait Connector {
 
   protected def rawInsertData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = ???
 
+  protected def rawReplaceData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = ???
+
+
 
   final def update(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = {
     ValidateDataManipulation.validateUpdateDefinition(tableName, definitions, this).flatMap {
@@ -53,6 +56,14 @@ trait Connector {
       case ValidationResult.Valid => rawInsertData(tableName, data)
       case validationResult => Future.successful(Left(FailedValidation(validationResult)))
     }
+  }
+
+  def replaceData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = {
+    ValidateDataManipulation.validateInsertData(tableName, data, this).flatMap {
+      case ValidationResult.Valid => rawReplaceData(tableName, data)
+      case validationResult => Future.successful(Left(FailedValidation(validationResult)))
+    }
+
   }
 
 }
