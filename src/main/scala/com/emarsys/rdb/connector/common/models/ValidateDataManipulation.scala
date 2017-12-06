@@ -1,6 +1,6 @@
 package com.emarsys.rdb.connector.common.models
 
-import com.emarsys.rdb.connector.common.models.DataManipulation.UpdateDefinition
+import com.emarsys.rdb.connector.common.models.DataManipulation.{Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
 
@@ -19,6 +19,19 @@ trait ValidateDataManipulation {
     ))
   }
 
+  def validateInsertData(tableName: String, dataToInsert: Seq[Record], connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    runValidations(Seq(
+      () => validateFormat(dataToInsert),
+      () => validateTableIsNotAView(tableName, connector),
+      () => validateFieldExistence(tableName, dataToInsert.head.keySet, connector)
+    )) map {
+      case ValidationResult.EmptyData =>
+        ValidationResult.Valid
+      case failedValidationResult =>
+        failedValidationResult
+    }
+  }
+
   private def runValidations(validations: Seq[DeferredValidation])(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
     if (validations.isEmpty) {
       Future.successful(ValidationResult.Valid)
@@ -31,6 +44,29 @@ trait ValidateDataManipulation {
         case failedValidationResult =>
           Future.successful(failedValidationResult)
       }
+    }
+  }
+
+  private def validateFieldExistence(tableName: String, updateData: Seq[UpdateDefinition], connector: Connector)(implicit executionContext: ExecutionContext) : Future[ValidationResult] = {
+    if(updateData.isEmpty){
+      Future.successful(ValidationResult.EmptyData)
+    } else {
+      val keyFields = updateData.head.search.keySet ++ updateData.head.update.keySet
+      validateFieldExistence(tableName, keyFields, connector)
+    }
+  }
+
+  private def validateFieldExistence(tableName: String, keyFields: Set[String], connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    connector.listFields(tableName).map {
+      case Right(columns) =>
+        val nonExistingFields = keyFields.diff(columns.map(_.name).toSet)
+        if (nonExistingFields.isEmpty) {
+          ValidationResult.Valid
+        } else {
+          ValidationResult.NonExistingFields(nonExistingFields)
+        }
+      case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
+      case _ => ValidationResult.NonExistingTable
     }
   }
 
@@ -50,26 +86,6 @@ trait ValidateDataManipulation {
     }
   }
 
-  private def validateFieldExistence(tableName: String, updateData: Seq[UpdateDefinition], connector: Connector)(implicit executionContext: ExecutionContext) : Future[ValidationResult] = {
-    if(updateData.isEmpty){
-      Future.successful(ValidationResult.NonExistingTable)
-    } else {
-      connector.listFields(tableName).map {
-        case Right(columns) =>
-          val keyFields = updateData.head.search.keySet ++ updateData.head.update.keySet
-          val nonExistingFields = keyFields.diff(columns.map(_.name).toSet)
-          if (nonExistingFields.isEmpty) {
-            ValidationResult.Valid
-          } else {
-            ValidationResult.NonExistingFields(nonExistingFields)
-          }
-        case _ =>
-          ValidationResult.NonExistingTable
-      }
-    }
-  }
-
-
   private def validateUpdateFields(tableName: String, updateData: Seq[UpdateDefinition], connector: Connector)(implicit executionContext: ExecutionContext) : Future[ValidationResult] = {
     validateFieldExistence(tableName, updateData, connector) flatMap {
       case ValidationResult.Valid =>
@@ -86,6 +102,23 @@ trait ValidateDataManipulation {
       case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
       case Left(_) => ValidationResult.ValidationFailed("Something went wrong")
     }
+  }
+
+  private def validateFormat(data: Seq[Record]) = Future.successful[ValidationResult] {
+    if (data.size > maxRows) {
+      ValidationResult.TooManyRows
+    } else if (data.isEmpty) {
+      ValidationResult.EmptyData
+    } else if (!areAllKeysTheSame(data)) {
+      ValidationResult.DifferentFields
+    } else {
+      ValidationResult.Valid
+    }
+  }
+
+  private def areAllKeysTheSame(dataToInsert: Seq[Record]): Boolean = {
+    val firstRecordsKeySet = dataToInsert.head.keySet
+    dataToInsert.forall(_.keySet == firstRecordsKeySet)
   }
 
   private def validateUpdateFormat(updateData: Seq[UpdateDefinition]) = Future.successful {

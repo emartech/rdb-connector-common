@@ -1,13 +1,13 @@
 package com.emarsys.rdb.connector.common.models
 
 object DataManipulation {
-  type Record = Map[String, String]
+  type Record = Map[String, FieldValueWrapper]
 
   type Criteria = Record
 
-  case class UpdateDefinition(search: Map[String, FieldValueWrapper], update: Map[String, FieldValueWrapper])
+  case class UpdateDefinition(search: Criteria, update: Record)
 
-  case class StringedUpdateDefinition(search: Criteria, update: Record)
+  case class StringedUpdateDefinition(search: Map[String, String], update: Map[String, String])
 
   sealed trait FieldValueWrapper
 

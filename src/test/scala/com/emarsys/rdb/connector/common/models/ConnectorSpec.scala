@@ -2,7 +2,7 @@ package com.emarsys.rdb.connector.common.models
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.DataManipulation.FieldValueWrapper.StringValue
-import com.emarsys.rdb.connector.common.models.DataManipulation.UpdateDefinition
+import com.emarsys.rdb.connector.common.models.DataManipulation.{Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.FailedValidation
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, TableModel}
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult.InvalidOperationOnView
@@ -46,6 +46,8 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     override def projectedRawSelect(rawSql: String, fields: Seq[String]) = ???
 
     override protected def rawUpdate(tableName: String, definitions: Seq[DataManipulation.UpdateDefinition]): ConnectorResponse[Int] = Future.successful(Right(4))
+
+    override protected def rawInsertData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
   }
 
   "#update" should {
@@ -58,6 +60,20 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     "return validation error" in {
       val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
       Await.result(myConnector.update(viewName, definitions), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
+    }
+
+  }
+
+  "#insert" should {
+
+    "return ok" in {
+      val records = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
+      Await.result(myConnector.insertIgnore(tableName, records), defaultTimeout) shouldBe Right(4)
+    }
+
+    "return validation error" in {
+      val records = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
+      Await.result(myConnector.insertIgnore(viewName, records), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
     }
 
   }

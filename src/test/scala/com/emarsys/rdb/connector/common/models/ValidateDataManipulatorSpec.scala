@@ -2,6 +2,7 @@ package com.emarsys.rdb.connector.common.models
 
 import com.emarsys.rdb.connector.common.models.DataManipulation.FieldValueWrapper.StringValue
 import com.emarsys.rdb.connector.common.models.DataManipulation.{FieldValueWrapper, UpdateDefinition}
+import com.emarsys.rdb.connector.common.models.Errors.TableNotFound
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, TableModel}
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
 import org.scalatest.mockito.MockitoSugar
@@ -24,7 +25,7 @@ class ValidateDataManipulatorSpec extends WordSpecLike with Matchers with Mockit
     val connector = mock[Connector]
   }
 
-   "#validateUpdateData" should {
+  "#validateUpdateData" should {
 
       "return valid if everything is ok" in new ValidatorScope {
         when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", ""), FieldModel("b", "")))))
@@ -126,4 +127,96 @@ class ValidateDataManipulatorSpec extends WordSpecLike with Matchers with Mockit
         validationResult shouldBe ValidationResult.InvalidOperationOnView
       }
     }
+
+  "#validateInsertData" should {
+
+    "return valid if number of rows is below or exactly 1000" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+
+
+      val data =  (1 to 1000).map(_ => Map("a" -> StringValue("1")))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, data, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.Valid
+    }
+
+    "return error if number of rows exceeds 1000" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+
+      val data =  (1 to 1001).map(_ => Map("a" -> StringValue("1")))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, data, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.TooManyRows
+    }
+
+    "return valid if all records contains the same fields" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+
+      val data = Seq(Map("a" -> StringValue("b"), "a" -> StringValue("c")))
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.Valid
+    }
+
+    "return valid if all records contains the same fields but in different order" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+
+      val data = Seq(Map("a" -> StringValue("1"), "b" -> StringValue("2")), Map("b" -> StringValue("3"), "a" -> StringValue("4")))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.Valid
+    }
+
+    "return valid for empty array" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, Seq(), connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.Valid
+    }
+
+    "return error if not all records contains the same fields" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+
+      val data: Seq[Map[String, StringValue]] = Seq(Map("a" -> StringValue("b")), Map())
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, data, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.DifferentFields
+    }
+
+    "return error if not all fields present in the database table" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("exists", "text"), FieldModel("exists2", "text")))))
+
+      val data: Seq[Map[String, StringValue]] = Seq(Map("notExists" -> StringValue("b"), "exists" -> StringValue("2"), "notExistsEither" -> StringValue("whatever")))
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NonExistingFields(Set("notExists", "notExistsEither"))
+    }
+
+    "return error if table not exists" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Left(TableNotFound(tableName))))
+
+      val data = Seq(Map("a" -> StringValue("b")), Map("a" -> StringValue("c")))
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NonExistingTable
+    }
+
+    "return error if we want an operation on a view" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(viewName)).thenReturn(Future.successful(Left(TableNotFound(tableName))))
+
+      val data = Seq(Map("a" -> StringValue("b")), Map("a" -> StringValue("c")))
+      val validationResult = Await.result(ValidateDataManipulation.validateInsertData(viewName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.InvalidOperationOnView
+    }
+
+  }
 }
