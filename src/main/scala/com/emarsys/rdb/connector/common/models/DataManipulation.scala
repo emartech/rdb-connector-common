@@ -24,21 +24,4 @@ object DataManipulation {
     case object NullValue extends FieldValueWrapper
 
   }
-
-  def convertUpdateDefinition(definition: UpdateDefinition): StringedUpdateDefinition = {
-    StringedUpdateDefinition(convertTypesToString(definition.search), convertTypesToString(definition.update))
-  }
-
-  private def convertTypesToString(record: Map[String, FieldValueWrapper]) = {
-    record.map({ case (key, value) =>
-      val valueAsString = value match {
-        case FieldValueWrapper.StringValue(s) => s
-        case FieldValueWrapper.IntValue(int) => int.toString
-        case FieldValueWrapper.BigDecimalValue(number) => number.toString
-        case FieldValueWrapper.BooleanValue(boolean) => if (boolean) "1" else "0"
-        case FieldValueWrapper.NullValue => null
-      }
-      (key, valueAsString)
-    })
-  }
 }
