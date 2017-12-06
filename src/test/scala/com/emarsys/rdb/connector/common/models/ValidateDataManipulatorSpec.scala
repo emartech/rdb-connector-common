@@ -219,4 +219,78 @@ class ValidateDataManipulatorSpec extends WordSpecLike with Matchers with Mockit
     }
 
   }
+
+  "#validateDeleteCriteria" should {
+
+    "return valid if everything is ok" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+      when(connector.isOptimized(tableName, Seq("a", "b"))).thenReturn(Future.successful(Right(true)))
+
+      val criterion = (1 to 1000).map(_ => Map("a" -> StringValue("1"), "b" -> StringValue("2")))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(tableName, criterion, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.Valid
+    }
+
+    "return error if number of rows exceeds 1000" in new ValidatorScope {
+      val criterion =  (1 to 1001).map(_ => Map("a" -> StringValue("1")))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(tableName, criterion, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.TooManyRows
+    }
+
+    "return error for empty array" in new ValidatorScope {
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(tableName, Seq(), connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.EmptyData
+    }
+
+    "return error if not all records contains the same fields" in new ValidatorScope {
+      val data: Seq[Map[String, StringValue]] = Seq(Map("a" -> StringValue("b")), Map())
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(tableName, data, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.DifferentFields
+    }
+
+    "return error if not all fields present in the database table" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("exists", "text"), FieldModel("existsToo", "text")))))
+
+      val data: Seq[Map[String, StringValue]] = Seq(Map("notExists" -> StringValue("b"), "exists" -> StringValue("2"), "notExistsEither" -> StringValue("whatever")))
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NonExistingFields(Set("notExists", "notExistsEither"))
+    }
+
+    "return error if table not exists" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Left(TableNotFound(tableName))))
+
+
+      val data = Seq(Map("a" -> StringValue("b")), Map("a" -> StringValue("c")))
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NonExistingTable
+    }
+
+    "return error if we want an operation on a view" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+
+      val data = Seq(Map("a" -> StringValue("b")), Map("a" -> StringValue("c")))
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(viewName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.InvalidOperationOnView
+    }
+
+    "return error if criteria fields has not indices" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("not_index", "")))))
+      when(connector.isOptimized(tableName, Seq("not_index"))).thenReturn(Future.successful(Right(false)))
+
+      val data = Seq(Map("not_index" -> StringValue("b")), Map("not_index" -> StringValue("c")))
+      val validationResult = Await.result(ValidateDataManipulation.validateDeleteCriteria(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NoIndexOnFields
+    }
+
+  }
 }

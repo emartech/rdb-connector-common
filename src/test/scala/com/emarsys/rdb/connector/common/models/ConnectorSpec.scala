@@ -2,7 +2,7 @@ package com.emarsys.rdb.connector.common.models
 
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.DataManipulation.FieldValueWrapper.StringValue
-import com.emarsys.rdb.connector.common.models.DataManipulation.{Record, UpdateDefinition}
+import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.FailedValidation
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, TableModel}
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult.InvalidOperationOnView
@@ -50,6 +50,8 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     override protected def rawInsertData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
 
     override protected def rawReplaceData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
+
+    override protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = Future.successful(Right(4))
   }
 
   "#update" should {
@@ -90,6 +92,19 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     "return validation error" in {
       val records = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
       Await.result(myConnector.replaceData(viewName, records), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
+    }
+  }
+
+  "#delete" should {
+
+    "return ok" in {
+      val criteria = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
+      Await.result(myConnector.delete(tableName, criteria), defaultTimeout) shouldBe Right(4)
+    }
+
+    "return validation error" in {
+      val criteria = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
+      Await.result(myConnector.delete(viewName, criteria), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
     }
   }
 

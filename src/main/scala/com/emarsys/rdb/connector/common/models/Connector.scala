@@ -3,7 +3,7 @@ package com.emarsys.rdb.connector.common.models
 import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.models.DataManipulation.{Record, UpdateDefinition}
+import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.FailedValidation
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors._
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
@@ -42,30 +42,35 @@ trait Connector {
 
   protected def rawReplaceData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = ???
 
+  protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = ???
 
 
   final def update(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = {
-    ValidateDataManipulation.validateUpdateDefinition(tableName, definitions, this).flatMap {
-      case ValidationResult.Valid => rawUpdate(tableName, definitions)
-      case validationResult => Future.successful(Left(FailedValidation(validationResult)))
-    }
+    validateAndExecute(ValidateDataManipulation.validateUpdateDefinition, tableName, rawUpdate, definitions)
   }
 
-  final def insertIgnore(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = {
-    ValidateDataManipulation.validateInsertData(tableName, data, this).flatMap {
-      case ValidationResult.Valid => rawInsertData(tableName, data)
-      case validationResult => Future.successful(Left(FailedValidation(validationResult)))
-    }
+  final def insertIgnore(tableName: String, records: Seq[Record]): ConnectorResponse[Int] = {
+    validateAndExecute(ValidateDataManipulation.validateInsertData, tableName, rawInsertData, records)
   }
 
-  def replaceData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = {
-    ValidateDataManipulation.validateInsertData(tableName, data, this).flatMap {
-      case ValidationResult.Valid => rawReplaceData(tableName, data)
-      case validationResult => Future.successful(Left(FailedValidation(validationResult)))
-    }
-
+  final def replaceData(tableName: String, records: Seq[Record]): ConnectorResponse[Int] = {
+    validateAndExecute(ValidateDataManipulation.validateInsertData, tableName, rawReplaceData, records)
   }
 
+  final def delete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = {
+    validateAndExecute(ValidateDataManipulation.validateDeleteCriteria, tableName, rawDelete, criteria)
+  }
+
+  private def validateAndExecute[T](
+                                     validationFn: (String, Seq[T], Connector) => Future[ValidationResult],
+                                     tableName:String,
+                                     executionFn: (String,Seq[T]) => ConnectorResponse[Int],
+                                     data: Seq[T]) = {
+    validationFn(tableName, data, this).flatMap {
+      case ValidationResult.Valid => executionFn(tableName, data)
+      case failedValidationResult => Future.successful(Left(FailedValidation(failedValidationResult)))
+    }
+  }
 }
 
 trait ConnectorCompanion {

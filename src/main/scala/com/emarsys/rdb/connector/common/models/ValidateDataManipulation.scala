@@ -1,6 +1,6 @@
 package com.emarsys.rdb.connector.common.models
 
-import com.emarsys.rdb.connector.common.models.DataManipulation.{Record, UpdateDefinition}
+import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.ErrorWithMessage
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
 
@@ -30,6 +30,15 @@ trait ValidateDataManipulation {
       case failedValidationResult =>
         failedValidationResult
     }
+  }
+
+  def validateDeleteCriteria(tableName: String, criteria: Seq[Criteria], connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    runValidations(Seq(
+      () => validateFormat(criteria),
+      () => validateTableIsNotAView(tableName, connector),
+      () => validateFieldExistence(tableName, criteria.head.keySet, connector),
+      () => validateIndices(tableName, criteria.head.keySet, connector)
+    ))
   }
 
   private def runValidations(validations: Seq[DeferredValidation])(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
