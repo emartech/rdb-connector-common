@@ -68,11 +68,11 @@ trait ValidateDataManipulation {
   private def validateFieldExistence(tableName: String, keyFields: Set[String], connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
     connector.listFields(tableName).map {
       case Right(columns) =>
-        val nonExistingFields = keyFields.diff(columns.map(_.name).toSet)
+        val nonExistingFields = keyFields.map(_.toLowerCase).diff(columns.map(_.name.toLowerCase).toSet)
         if (nonExistingFields.isEmpty) {
           ValidationResult.Valid
         } else {
-          ValidationResult.NonExistingFields(nonExistingFields)
+          ValidationResult.NonExistingFields(keyFields.filter(kf => nonExistingFields.contains(kf.toLowerCase)))
         }
       case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
       case _ => ValidationResult.NonExistingTable

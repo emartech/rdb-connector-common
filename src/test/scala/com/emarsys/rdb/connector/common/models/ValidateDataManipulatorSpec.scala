@@ -109,6 +109,18 @@ class ValidateDataManipulatorSpec extends WordSpecLike with Matchers with Mockit
         validationResult shouldBe ValidationResult.NonExistingFields(Set("notExists"))
       }
 
+      "validate with insensitive column names" in new ValidatorScope {
+        when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", ""), FieldModel("b", "")))))
+        when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+        when(connector.isOptimized(any[String], any[Seq[String]])).thenReturn(Future.successful(Right(true)))
+
+        val updateData = Seq(UpdateDefinition(Map("A" -> StringValue("1")), Map("B" -> StringValue("2"))))
+
+        val validationResult = Await.result(ValidateDataManipulation.validateUpdateDefinition(tableName, updateData, connector), defaultTimeout)
+
+        validationResult shouldBe ValidationResult.Valid
+      }
+
       "return error if criteria fields has no indices" in new ValidatorScope {
         when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
         when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("not_index",""), FieldModel("a", "")))))
