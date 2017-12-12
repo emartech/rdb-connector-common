@@ -14,7 +14,7 @@ Defines a Connector trait, that every connector should implement. Contains the c
 
 ## Dependants:
 
-**[Rdb-connector - common - test](https://github.com/emartech/rdb-connector-common)**  - contains common test implementations, that may be used in specific connectors
+**[Rdb - connector - test](https://github.com/emartech/rdb-connector-test)**  - contains common test implementations, that may be used in specific connectors
 
 
 
