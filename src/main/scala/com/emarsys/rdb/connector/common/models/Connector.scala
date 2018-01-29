@@ -36,6 +36,8 @@ trait Connector {
 
   def projectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Source[Seq[String], NotUsed]]
 
+  def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = ???
+
   protected def rawUpdate(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = ???
 
   protected def rawInsertData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = ???
