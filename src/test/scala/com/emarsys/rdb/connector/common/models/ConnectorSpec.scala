@@ -43,7 +43,9 @@ class ConnectorSpec extends WordSpecLike with Matchers {
 
     override def analyzeRawSelect(rawSql: String) = ???
 
-    override def projectedRawSelect(rawSql: String, fields: Seq[String]) = ???
+    override def projectedRawSelect(rawSql: String, fields: Seq[String], allowNullFieldValue: Boolean = false) = ???
+
+    override def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = ???
 
     override protected def rawUpdate(tableName: String, definitions: Seq[DataManipulation.UpdateDefinition]): ConnectorResponse[Int] = Future.successful(Right(4))
 
@@ -52,6 +54,7 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     override protected def rawReplaceData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
 
     override protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = Future.successful(Right(4))
+
   }
 
   "#update" should {
