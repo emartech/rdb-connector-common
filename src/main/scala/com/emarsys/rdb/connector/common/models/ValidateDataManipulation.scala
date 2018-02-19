@@ -74,7 +74,7 @@ trait ValidateDataManipulation {
         } else {
           ValidationResult.NonExistingFields(keyFields.filter(kf => nonExistingFields.contains(kf.toLowerCase)))
         }
-      case Left(ErrorWithMessage(msg, _)) => ValidationResult.ValidationFailed(msg)
+      case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
       case _ => ValidationResult.NonExistingTable
     }
   }
@@ -90,7 +90,7 @@ trait ValidateDataManipulation {
         else
           ValidationResult.Valid
 
-      case Left(ErrorWithMessage(msg, _)) => ValidationResult.ValidationFailed(msg)
+      case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
       case Left(_) => ValidationResult.ValidationFailed("Something went wrong")
     }
   }
@@ -108,7 +108,7 @@ trait ValidateDataManipulation {
     connector.isOptimized(tableName, keyFields.toList).map {
       case Right(true) => ValidationResult.Valid
       case Right(false) => ValidationResult.NoIndexOnFields
-      case Left(ErrorWithMessage(msg, _)) => ValidationResult.ValidationFailed(msg)
+      case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
       case Left(_) => ValidationResult.ValidationFailed("Something went wrong")
     }
   }
