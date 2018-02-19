@@ -6,7 +6,7 @@ object Errors {
 
   sealed trait ConnectorError
 
-  case class ErrorWithMessage(message: String) extends ConnectorError
+  case class ErrorWithMessage(message: String, cause: Option[Throwable] = None) extends ConnectorError
 
   case class TableNotFound(table: String) extends ConnectorError
 
