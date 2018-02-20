@@ -8,7 +8,7 @@ import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldMode
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult.InvalidOperationOnView
 import org.scalatest.{Matchers, WordSpecLike}
 
-import concurrent.duration._
+import scala.concurrent.duration._
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 class ConnectorSpec extends WordSpecLike with Matchers {
@@ -25,27 +25,11 @@ class ConnectorSpec extends WordSpecLike with Matchers {
 
     override def close() = ???
 
-    override def testConnection() = ???
-
     override def listTables() = Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true))))
-
-    override def listTablesWithFields() = ???
 
     override def listFields(table: String) = Future.successful(Right(Seq(FieldModel("a", ""), FieldModel("b", ""))))
 
     override def isOptimized(table: String, fields: Seq[String]) = Future.successful(Right(true))
-
-    override def simpleSelect(select: SimpleSelect) = ???
-
-    override def rawSelect(rawSql: String, limit: Option[Int]) = ???
-
-    override def validateRawSelect(rawSql: String) = ???
-
-    override def analyzeRawSelect(rawSql: String) = ???
-
-    override def projectedRawSelect(rawSql: String, fields: Seq[String], allowNullFieldValue: Boolean = false) = ???
-
-    override def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = ???
 
     override protected def rawUpdate(tableName: String, definitions: Seq[DataManipulation.UpdateDefinition]): ConnectorResponse[Int] = Future.successful(Right(4))
 

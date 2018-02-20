@@ -12,4 +12,6 @@ object Errors {
 
   case class FailedValidation(validationResult: ValidationResult) extends ConnectorError
 
+  case object NotImplementedOperation extends ConnectorError
+
 }
