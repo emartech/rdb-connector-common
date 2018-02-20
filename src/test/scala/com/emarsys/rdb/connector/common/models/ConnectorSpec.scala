@@ -33,6 +33,8 @@ class ConnectorSpec extends WordSpecLike with Matchers {
 
     override protected def rawUpdate(tableName: String, definitions: Seq[DataManipulation.UpdateDefinition]): ConnectorResponse[Int] = Future.successful(Right(4))
 
+    override protected def rawUpsert(tableName: String, definitions: Seq[DataManipulation.UpdateDefinition]): ConnectorResponse[Int] = Future.successful(Right(4))
+
     override protected def rawInsertData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
 
     override protected def rawReplaceData(tableName: String, data: Seq[Record]): ConnectorResponse[Int] = Future.successful(Right(4))
@@ -51,6 +53,20 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     "return validation error" in {
       val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
       Await.result(myConnector.update(viewName, definitions), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
+    }
+
+  }
+
+  "#upsert" should {
+
+    "return ok" in {
+      val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
+      Await.result(myConnector.upsert(tableName, definitions), defaultTimeout) shouldBe Right(4)
+    }
+
+    "return validation error" in {
+      val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
+      Await.result(myConnector.upsert(viewName, definitions), defaultTimeout) shouldBe Left(FailedValidation(InvalidOperationOnView))
     }
 
   }

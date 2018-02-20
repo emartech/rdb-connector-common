@@ -13,11 +13,9 @@ trait SqlWriter[T] {
 
 object SqlWriter {
 
-  class WritableSqlElement[T](any: T) {
+  implicit class WritableSqlElement[T](any: T) {
     def toSql(implicit writer: SqlWriter[T]): String = writer.write(any)
   }
-
-  implicit def createWritableSqlElement[T](any: T): WritableSqlElement[T] = new WritableSqlElement(any)
 
   implicit def func2LazyWriter[T](f: T => String): SqlWriter[T] = lazyWriter((obj: T) => f(obj))
 

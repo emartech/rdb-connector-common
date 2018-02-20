@@ -62,6 +62,10 @@ class ConnectorNotImplementedOperationSpec extends WordSpecLike with Matchers {
       val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
       Await.result(rawUpdate(tableName, definitions), defaultTimeout) shouldBe Left(NotImplementedOperation)
     }
+    "#rawUpsert" in new ConnectorTestScope {
+      val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
+      Await.result(rawUpsert(tableName, definitions), defaultTimeout) shouldBe Left(NotImplementedOperation)
+    }
     "#rawInsertData" in new ConnectorTestScope {
       val records = Seq(Map("a" -> StringValue("1")), Map("a" -> StringValue("2")))
       Await.result(rawInsertData(tableName, records), defaultTimeout) shouldBe Left(NotImplementedOperation)
