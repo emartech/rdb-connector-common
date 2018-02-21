@@ -41,11 +41,11 @@ trait Connector {
 
   protected def rawUpdate(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = notImplementedOperation
 
-  protected def rawUpsert(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = notImplementedOperation
-
   protected def rawInsertData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation
 
   protected def rawReplaceData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation
+
+  protected def rawUpsert(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation
 
   protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = notImplementedOperation
 
@@ -54,16 +54,16 @@ trait Connector {
     validateAndExecute(ValidateDataManipulation.validateUpdateDefinition, tableName, rawUpdate, definitions)
   }
 
-  final def upsert(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = {
-    validateAndExecute(ValidateDataManipulation.validateUpdateDefinition, tableName, rawUpsert, definitions)
-  }
-
   final def insertIgnore(tableName: String, records: Seq[Record]): ConnectorResponse[Int] = {
     validateAndExecute(ValidateDataManipulation.validateInsertData, tableName, rawInsertData, records)
   }
 
   final def replaceData(tableName: String, records: Seq[Record]): ConnectorResponse[Int] = {
     validateAndExecute(ValidateDataManipulation.validateInsertData, tableName, rawReplaceData, records)
+  }
+
+  final def upsert(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = {
+    validateAndExecute(ValidateDataManipulation.validateInsertData, tableName, rawUpsert, definitions)
   }
 
   final def delete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = {
