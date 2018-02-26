@@ -17,6 +17,10 @@ trait Connector {
 
   def close(): Future[Unit]
 
+  def innerMetrics(): String = {
+    "{}"
+  }
+
   def testConnection(): ConnectorResponse[Unit] = notImplementedOperation
 
   def listTables(): ConnectorResponse[Seq[TableModel]] = notImplementedOperation
