@@ -2,8 +2,11 @@ package com.emarsys.rdb.connector.common.models
 
 import com.emarsys.rdb.connector.common.models.SimpleSelect.{Fields, TableName, WhereCondition}
 
-
-case class SimpleSelect(fields: Fields, table: TableName, where: Option[WhereCondition] = None, limit: Option[Int] = None)
+case class SimpleSelect(fields: Fields,
+                        table: TableName,
+                        where: Option[WhereCondition] = None,
+                        limit: Option[Int] = None,
+                        distinct: Boolean = false)
 
 object SimpleSelect {
 

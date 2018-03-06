@@ -102,7 +102,8 @@ trait DefaultSqlWriters {
   }
 
   implicit lazy val simpleSelectWriter: SqlWriter[SimpleSelect] = (ss: SimpleSelect) => {
-    val head = s"SELECT ${ss.fields.toSql} FROM ${ss.table.toSql}"
+    val distinct = if(ss.distinct) "DISTINCT " else ""
+    val head = s"SELECT $distinct${ss.fields.toSql} FROM ${ss.table.toSql}"
     val where = ss.where.map(_.toSql).map(" WHERE " + _).getOrElse("")
     val limit = ss.limit.map(" LIMIT " + _).getOrElse("")
 
