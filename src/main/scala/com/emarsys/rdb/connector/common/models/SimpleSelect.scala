@@ -6,7 +6,7 @@ case class SimpleSelect(fields: Fields,
                         table: TableName,
                         where: Option[WhereCondition] = None,
                         limit: Option[Int] = None,
-                        distinct: Boolean = false)
+                        distinct: Option[Boolean] = None)
 
 object SimpleSelect {
 

@@ -305,13 +305,25 @@ class DefaultSqlWriterSpec extends WordSpecLike with Matchers {
         select.toSql shouldEqual """SELECT * FROM "TABLE1""""
       }
 
+      "use default writer - disabled distinct" in {
+        import DefaultSqlWriters._
+
+        val select = SimpleSelect(
+          fields = AllField,
+          table = TableName("TABLE1"),
+          distinct = Some(false)
+        )
+
+        select.toSql shouldEqual """SELECT * FROM "TABLE1""""
+      }
+
       "use default writer - distinct" in {
         import DefaultSqlWriters._
 
         val select = SimpleSelect(
           fields = AllField,
           table = TableName("TABLE1"),
-          distinct = true
+          distinct = Some(true)
         )
 
         select.toSql shouldEqual """SELECT DISTINCT * FROM "TABLE1""""
@@ -373,7 +385,7 @@ class DefaultSqlWriterSpec extends WordSpecLike with Matchers {
           table = TableName("TABLE1"),
           where = Some(And(Seq(IsNull(FieldName("FIELD1")), And(Seq(IsNull(FieldName("FIELD2")), EqualToValue(FieldName("FIELD3"), Value("VALUE3"))))))),
           limit = Some(100),
-          distinct = true
+          distinct = Some(true)
         )
 
         select.toSql shouldEqual """SELECT DISTINCT "FIELD1","FIELD2","FIELD3" FROM "TABLE1" WHERE ("FIELD1" IS NULL AND ("FIELD2" IS NULL AND "FIELD3"='VALUE3')) LIMIT 100"""
