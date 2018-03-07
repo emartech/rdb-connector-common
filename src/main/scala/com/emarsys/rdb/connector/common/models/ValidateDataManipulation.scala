@@ -41,6 +41,22 @@ trait ValidateDataManipulation {
     ))
   }
 
+  def validateSearchCriteria(tableName: String, criteria: Criteria, connector: Connector)(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
+    runValidations(Seq(
+      () => validateEmtpyCriteria(criteria),
+      () => validateFieldExistence(tableName, criteria.keySet, connector),
+      () => validateIndices(tableName, criteria.keySet, connector)
+    ))
+  }
+
+  private def validateEmtpyCriteria(data: Criteria) = Future.successful[ValidationResult] {
+    if (data.isEmpty) {
+      ValidationResult.EmptyData
+    } else {
+      ValidationResult.Valid
+    }
+  }
+
   private def runValidations(validations: Seq[DeferredValidation])(implicit executionContext: ExecutionContext): Future[ValidationResult] = {
     if (validations.isEmpty) {
       Future.successful(ValidationResult.Valid)

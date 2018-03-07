@@ -305,4 +305,67 @@ class ValidateDataManipulatorSpec extends WordSpecLike with Matchers with Mockit
     }
 
   }
+
+  "#validateSearchCriteria" should {
+
+    "return valid if everything is ok" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+      when(connector.isOptimized(tableName, Seq("a", "b"))).thenReturn(Future.successful(Right(true)))
+
+      val criterion = Map("a" -> StringValue("1"), "b" -> StringValue("2"))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateSearchCriteria(tableName, criterion, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.Valid
+    }
+
+    "return valid if everything is ok with view" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(viewName)).thenReturn(Future.successful(Right(Seq(FieldModel("a", "text"), FieldModel("b", "text")))))
+      when(connector.isOptimized(viewName, Seq("a", "b"))).thenReturn(Future.successful(Right(true)))
+
+      val criterion = Map("a" -> StringValue("1"), "b" -> StringValue("2"))
+
+      val validationResult = Await.result(ValidateDataManipulation.validateSearchCriteria(viewName, criterion, connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.Valid
+    }
+
+    "return error for empty search" in new ValidatorScope {
+      val validationResult = Await.result(ValidateDataManipulation.validateSearchCriteria(tableName, Map(), connector), defaultTimeout)
+
+      validationResult shouldBe ValidationResult.EmptyData
+    }
+
+    "return error if not all fields present in the database table" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("exists", "text"), FieldModel("existsToo", "text")))))
+
+      val data: Map[String, StringValue] = Map("notExists" -> StringValue("b"), "exists" -> StringValue("2"), "notExistsEither" -> StringValue("whatever"))
+      val validationResult = Await.result(ValidateDataManipulation.validateSearchCriteria(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NonExistingFields(Set("notExists", "notExistsEither"))
+    }
+
+    "return error if table not exists" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Left(TableNotFound(tableName))))
+
+
+      val data = Map("a" -> StringValue("b"))
+      val validationResult = Await.result(ValidateDataManipulation.validateSearchCriteria(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NonExistingTable
+    }
+
+    "return error if criteria fields has not indices" in new ValidatorScope {
+      when(connector.listTables()).thenReturn(Future.successful(Right(Seq(TableModel(tableName, false), TableModel(viewName, true)))))
+      when(connector.listFields(tableName)).thenReturn(Future.successful(Right(Seq(FieldModel("not_index", "")))))
+      when(connector.isOptimized(tableName, Seq("not_index"))).thenReturn(Future.successful(Right(false)))
+
+      val data = Map("not_index" -> StringValue("b"))
+      val validationResult = Await.result(ValidateDataManipulation.validateSearchCriteria(tableName, data, connector), defaultTimeout)
+      validationResult shouldBe ValidationResult.NoIndexOnFields
+    }
+
+  }
 }

@@ -4,8 +4,10 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.emarsys.rdb.connector.common.notImplementedOperation
 import com.emarsys.rdb.connector.common.ConnectorResponse
+import com.emarsys.rdb.connector.common.defaults.{DefaultFieldValueConverters, FieldValueConverters}
 import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.FailedValidation
+import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors._
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
 
@@ -14,6 +16,7 @@ import scala.concurrent.{ExecutionContext, Future}
 trait Connector {
 
   implicit val executionContext: ExecutionContext
+  protected val fieldValueConverters: FieldValueConverters = DefaultFieldValueConverters
 
   def close(): Future[Unit]
 
@@ -53,6 +56,30 @@ trait Connector {
 
   protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = notImplementedOperation
 
+  protected def rawSearch(tableName: String, criteria: Criteria, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+    val query = SimpleSelect(
+      fields = AllField,
+      table  = TableName(tableName),
+      where  = Some(createWhereCondition(criteria)),
+      limit  = limit
+    )
+
+    simpleSelect(query)
+  }
+
+  private def createWhereCondition(criteria: Criteria): WhereCondition = {
+    import com.emarsys.rdb.connector.common.defaults.FieldValueConverter._
+    import fieldValueConverters._
+
+    And(
+      criteria
+        .mapValues(_.toSimpleSelectValue)
+        .map {
+          case (field, Some(value)) => EqualToValue(FieldName(field), value)
+          case (field, None)        => IsNull(FieldName(field))
+        }.toSeq
+    )
+  }
 
   final def update(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = {
     validateAndExecute(ValidateDataManipulation.validateUpdateDefinition, tableName, rawUpdate, definitions)
@@ -72,6 +99,13 @@ trait Connector {
 
   final def delete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = {
     validateAndExecute(ValidateDataManipulation.validateDeleteCriteria, tableName, rawDelete, criteria)
+  }
+
+  final def search(tableName: String, criteria: Criteria, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+    ValidateDataManipulation.validateSearchCriteria(tableName, criteria, this).flatMap {
+      case ValidationResult.Valid => rawSearch(tableName, criteria, limit)
+      case failedValidationResult => Future.successful(Left(FailedValidation(failedValidationResult)))
+    }
   }
 
   private def validateAndExecute[T](
