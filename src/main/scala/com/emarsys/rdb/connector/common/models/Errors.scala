@@ -4,13 +4,13 @@ import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.Validati
 
 object Errors {
 
-  sealed trait ConnectorError
+  sealed abstract class ConnectorError(message: String) extends Exception(message)
 
-  case class ErrorWithMessage(message: String) extends ConnectorError
+  case class ErrorWithMessage(message: String) extends ConnectorError(message)
 
-  case class TableNotFound(table: String) extends ConnectorError
+  case class TableNotFound(table: String) extends ConnectorError(s"Table not found: $table")
 
-  case class FailedValidation(validationResult: ValidationResult) extends ConnectorError
+  case class FailedValidation(validationResult: ValidationResult) extends ConnectorError("Validation Failed")
 
   case object NotImplementedOperation extends ConnectorError
 

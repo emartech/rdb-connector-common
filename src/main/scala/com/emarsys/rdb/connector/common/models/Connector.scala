@@ -18,6 +18,10 @@ trait Connector {
   implicit val executionContext: ExecutionContext
   protected val fieldValueConverters: FieldValueConverters = DefaultFieldValueConverters
 
+  val isErrorRetryable: PartialFunction[Throwable, Boolean] = {
+    case _ => false
+  }
+
   def close(): Future[Unit]
 
   def innerMetrics(): String = {

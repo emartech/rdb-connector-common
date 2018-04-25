@@ -111,4 +111,10 @@ class ConnectorSpec extends WordSpecLike with Matchers {
     }
   }
 
+  "#isErrorRetryable" should {
+    "return false for any input" in {
+      myConnector.isErrorRetryable(new Exception()) shouldBe false
+    }
+  }
+
 }
