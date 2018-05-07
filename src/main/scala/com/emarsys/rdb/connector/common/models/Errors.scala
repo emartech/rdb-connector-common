@@ -6,6 +6,10 @@ object Errors {
 
   sealed abstract class ConnectorError(message: String = "") extends Exception(message)
 
+  case class ConnectionError(error: Throwable) extends ConnectorError(error.getMessage)
+
+  case class ConnectionConfigError(message: String) extends ConnectorError(message)
+
   case class ErrorWithMessage(message: String) extends ConnectorError(message)
 
   case class TableNotFound(table: String) extends ConnectorError(s"Table not found: $table")
