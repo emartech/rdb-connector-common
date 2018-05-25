@@ -107,7 +107,7 @@ trait ValidateDataManipulation {
           ValidationResult.Valid
 
       case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
-      case Left(_) => ValidationResult.ValidationFailed("Something went wrong")
+      case Left(ex) => ValidationResult.ValidationFailed(s"Something went wrong: $ex")
     }
   }
 
@@ -125,7 +125,7 @@ trait ValidateDataManipulation {
       case Right(true) => ValidationResult.Valid
       case Right(false) => ValidationResult.NoIndexOnFields
       case Left(ErrorWithMessage(msg)) => ValidationResult.ValidationFailed(msg)
-      case Left(_) => ValidationResult.ValidationFailed("Something went wrong")
+      case Left(ex) => ValidationResult.ValidationFailed(s"Something went wrong: $ex")
     }
   }
 
