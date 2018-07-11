@@ -58,6 +58,9 @@ class ConnectorNotImplementedOperationSpec extends WordSpecLike with Matchers {
     "#validateProjectedRawSelect" in new ConnectorTestScope {
       Await.result(validateProjectedRawSelect(sql, Seq()), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
+    "#rawQuery" in new ConnectorTestScope {
+      Await.result(rawQuery(sql), defaultTimeout) shouldEqual Left(NotImplementedOperation)
+    }
     "#rawUpdate" in new ConnectorTestScope {
       val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
       Await.result(rawUpdate(tableName, definitions), defaultTimeout) shouldBe Left(NotImplementedOperation)
