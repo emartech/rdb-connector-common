@@ -46,7 +46,7 @@ trait Connector {
 
   def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
 
-  def projectedRawSelect(rawSql: String, fields: Seq[String], allowNullFieldValue: Boolean = false): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], allowNullFieldValue: Boolean = false): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
 
   def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = notImplementedOperation
 

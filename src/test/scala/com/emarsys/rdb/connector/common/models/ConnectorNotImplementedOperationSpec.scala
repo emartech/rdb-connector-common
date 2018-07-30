@@ -53,7 +53,7 @@ class ConnectorNotImplementedOperationSpec extends WordSpecLike with Matchers {
       Await.result(analyzeRawSelect(sql), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#projectedRawSelect" in new ConnectorTestScope {
-      Await.result(projectedRawSelect(sql, Seq()), defaultTimeout) shouldEqual Left(NotImplementedOperation)
+      Await.result(projectedRawSelect(sql, Seq(), None), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#validateProjectedRawSelect" in new ConnectorTestScope {
       Await.result(validateProjectedRawSelect(sql, Seq()), defaultTimeout) shouldEqual Left(NotImplementedOperation)
