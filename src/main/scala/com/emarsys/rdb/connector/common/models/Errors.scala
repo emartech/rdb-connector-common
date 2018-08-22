@@ -14,6 +14,10 @@ object Errors {
 
   case class TableNotFound(table: String) extends ConnectorError(s"Table not found: $table")
 
+  case class SqlSyntaxError(message: String) extends ConnectorError(message)
+
+  case class ConnectionTimeout(message: String) extends ConnectorError(message)
+
   case class FailedValidation(validationResult: ValidationResult) extends ConnectorError
 
   case object NotImplementedOperation extends ConnectorError
