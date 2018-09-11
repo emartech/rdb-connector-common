@@ -22,6 +22,7 @@ class ConnectorSearchSpec extends WordSpecLike with Matchers with MockitoSugar w
   val viewName = "viewName"
 
   val defaultTimeout = 3.seconds
+  val sqlTimeout = 3.seconds
 
   class TestConnector extends Connector {
     override implicit val executionContext: ExecutionContext = executionCtx
@@ -34,7 +35,7 @@ class ConnectorSearchSpec extends WordSpecLike with Matchers with MockitoSugar w
 
     override def isOptimized(table: String, fields: Seq[String]) = Future.successful(Right(true))
 
-    override def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[Seq[String], NotUsed]] = Future.successful(Right(Source(List(Seq("head")))))
+    override def simpleSelect(select: SimpleSelect, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = Future.successful(Right(Source(List(Seq("head")))))
   }
 
   val myConnector = spy(new TestConnector())
@@ -47,66 +48,71 @@ class ConnectorSearchSpec extends WordSpecLike with Matchers with MockitoSugar w
 
     "return ok - string value" in {
       val criteria: Criteria = Map("a" -> StringValue("1"))
-      Await.result(myConnector.search(tableName, criteria, Some(1)), defaultTimeout) shouldBe a[Right[_, _]]
+      Await.result(myConnector.search(tableName, criteria, Some(1), sqlTimeout), defaultTimeout) shouldBe a[Right[_, _]]
       verify(myConnector).simpleSelect(
         SimpleSelect(
           AllField,
           TableName(tableName),
           Some(And(Seq(EqualToValue(FieldName("a"), Value("1"))))),
           Some(1)
-        )
+        ),
+        sqlTimeout
       )
     }
 
     "return ok - int value" in {
       val criteria: Criteria = Map("a" -> IntValue(1))
-      Await.result(myConnector.search(tableName, criteria, Some(1)), defaultTimeout) shouldBe a[Right[_, _]]
+      Await.result(myConnector.search(tableName, criteria, Some(1), sqlTimeout), defaultTimeout) shouldBe a[Right[_, _]]
       verify(myConnector).simpleSelect(
         SimpleSelect(
           AllField,
           TableName(tableName),
           Some(And(Seq(EqualToValue(FieldName("a"), Value("1"))))),
           Some(1)
-        )
+        ),
+        sqlTimeout
       )
     }
 
     "return ok - bigdecimal value" in {
       val criteria: Criteria = Map("a" -> BigDecimalValue(1))
-      Await.result(myConnector.search(tableName, criteria, Some(1)), defaultTimeout) shouldBe a[Right[_, _]]
+      Await.result(myConnector.search(tableName, criteria, Some(1), sqlTimeout), defaultTimeout) shouldBe a[Right[_, _]]
       verify(myConnector).simpleSelect(
         SimpleSelect(
           AllField,
           TableName(tableName),
           Some(And(Seq(EqualToValue(FieldName("a"), Value("1"))))),
           Some(1)
-        )
+        ),
+        sqlTimeout
       )
     }
 
     "return ok - boolean value" in {
       val criteria: Criteria = Map("a" -> BooleanValue(true))
-      Await.result(myConnector.search(tableName, criteria, Some(1)), defaultTimeout) shouldBe a[Right[_, _]]
+      Await.result(myConnector.search(tableName, criteria, Some(1), sqlTimeout), defaultTimeout) shouldBe a[Right[_, _]]
       verify(myConnector).simpleSelect(
         SimpleSelect(
           AllField,
           TableName(tableName),
           Some(And(Seq(EqualToValue(FieldName("a"), Value("true"))))),
           Some(1)
-        )
+        ),
+        sqlTimeout
       )
     }
 
     "return ok - null value" in {
       val criteria: Criteria = Map("a" -> NullValue)
-      Await.result(myConnector.search(tableName, criteria, Some(1)), defaultTimeout) shouldBe a[Right[_, _]]
+      Await.result(myConnector.search(tableName, criteria, Some(1), sqlTimeout), defaultTimeout) shouldBe a[Right[_, _]]
       verify(myConnector).simpleSelect(
         SimpleSelect(
           AllField,
           TableName(tableName),
           Some(And(Seq(IsNull(FieldName("a"))))),
           Some(1)
-        )
+        ),
+        sqlTimeout
       )
     }
   }

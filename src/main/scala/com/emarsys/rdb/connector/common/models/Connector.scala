@@ -63,7 +63,7 @@ trait Connector {
 
   protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = notImplementedOperation
 
-  protected def rawSearch(tableName: String, criteria: Criteria, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+  protected def rawSearch(tableName: String, criteria: Criteria, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val query = SimpleSelect(
       fields = AllField,
       table  = TableName(tableName),
@@ -71,7 +71,7 @@ trait Connector {
       limit  = limit
     )
 
-    simpleSelect(query)
+    simpleSelect(query, timeout)
   }
 
   private def createWhereCondition(criteria: Criteria): WhereCondition = {
@@ -108,9 +108,9 @@ trait Connector {
     validateAndExecute(ValidateDataManipulation.validateDeleteCriteria, tableName, rawDelete, criteria)
   }
 
-  final def search(tableName: String, criteria: Criteria, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+  final def search(tableName: String, criteria: Criteria, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     ValidateDataManipulation.validateSearchCriteria(tableName, criteria, this).flatMap {
-      case ValidationResult.Valid => rawSearch(tableName, criteria, limit)
+      case ValidationResult.Valid => rawSearch(tableName, criteria, limit, timeout)
       case failedValidationResult => Future.successful(Left(FailedValidation(failedValidationResult)))
     }
   }

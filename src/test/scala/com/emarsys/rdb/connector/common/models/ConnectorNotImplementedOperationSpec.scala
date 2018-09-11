@@ -17,6 +17,7 @@ class ConnectorNotImplementedOperationSpec extends WordSpecLike with Matchers {
   val sql = "SQL"
 
   val defaultTimeout = 3.seconds
+  val sqlTimeout = 3.seconds
 
   class ConnectorTestScope extends Connector {
     override implicit val executionContext: ExecutionContext = executionCtx
@@ -41,10 +42,10 @@ class ConnectorNotImplementedOperationSpec extends WordSpecLike with Matchers {
       Await.result(isOptimized(tableName, Seq()), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#simpleSelect" in new ConnectorTestScope {
-      Await.result(simpleSelect(SimpleSelect(AllField, TableName(tableName))), defaultTimeout) shouldEqual Left(NotImplementedOperation)
+      Await.result(simpleSelect(SimpleSelect(AllField, TableName(tableName)), sqlTimeout), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#rawSelect" in new ConnectorTestScope {
-      Await.result(rawSelect(sql, None), defaultTimeout) shouldEqual Left(NotImplementedOperation)
+      Await.result(rawSelect(sql, None, sqlTimeout), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#validateRawSelect" in new ConnectorTestScope {
       Await.result(validateRawSelect(sql), defaultTimeout) shouldEqual Left(NotImplementedOperation)
@@ -53,13 +54,13 @@ class ConnectorNotImplementedOperationSpec extends WordSpecLike with Matchers {
       Await.result(analyzeRawSelect(sql), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#projectedRawSelect" in new ConnectorTestScope {
-      Await.result(projectedRawSelect(sql, Seq(), None), defaultTimeout) shouldEqual Left(NotImplementedOperation)
+      Await.result(projectedRawSelect(sql, Seq(), None, sqlTimeout), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#validateProjectedRawSelect" in new ConnectorTestScope {
       Await.result(validateProjectedRawSelect(sql, Seq()), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#rawQuery" in new ConnectorTestScope {
-      Await.result(rawQuery(sql), defaultTimeout) shouldEqual Left(NotImplementedOperation)
+      Await.result(rawQuery(sql, sqlTimeout), defaultTimeout) shouldEqual Left(NotImplementedOperation)
     }
     "#rawUpdate" in new ConnectorTestScope {
       val definitions = Seq(UpdateDefinition(Map("a" -> StringValue("1")), Map("b" -> StringValue("2"))))
