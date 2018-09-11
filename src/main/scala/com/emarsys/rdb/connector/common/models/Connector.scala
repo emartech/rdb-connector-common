@@ -11,6 +11,7 @@ import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors._
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
 
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
 trait Connector {
@@ -38,19 +39,19 @@ trait Connector {
 
   def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean] = notImplementedOperation
 
-  def simpleSelect(select: SimpleSelect): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def simpleSelect(select: SimpleSelect, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
 
-  def rawSelect(rawSql: String, limit: Option[Int]): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def rawSelect(rawSql: String, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
 
   def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = notImplementedOperation
 
   def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
 
-  def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], allowNullFieldValue: Boolean = false): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], timeout: FiniteDuration, allowNullFieldValue: Boolean = false): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
 
   def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = notImplementedOperation
 
-  def rawQuery(rawSql: String): ConnectorResponse[Int] = notImplementedOperation
+  def rawQuery(rawSql: String, timeout: FiniteDuration): ConnectorResponse[Int] = notImplementedOperation
 
   protected def rawUpdate(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = notImplementedOperation
 
