@@ -1,6 +1,5 @@
-# Rdb - connector - common
-[ ![Codeship Status for emartech/rdb-connector-common](https://app.codeship.com/projects/0178d870-9c53-0135-6d81-1a351be8063b/status?branch=master)](https://app.codeship.com/projects/252925)
-[![](https://www.jitpack.io/v/emartech/rdb-connector-common.svg)](https://www.jitpack.io/#emartech/rdb-connector-common)
+# Rdb - connector - common [![Codeship Status for emartech/rdb-connector-common](https://app.codeship.com/projects/0178d870-9c53-0135-6d81-1a351be8063b/status?branch=master)](https://app.codeship.com/projects/252925) [![](https://www.jitpack.io/v/emartech/rdb-connector-common.svg)](https://www.jitpack.io/#emartech/rdb-connector-common)
+
 
 ## Definitions:
 
