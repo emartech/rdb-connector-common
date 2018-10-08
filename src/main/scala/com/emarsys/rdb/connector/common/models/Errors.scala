@@ -16,6 +16,8 @@ object Errors {
 
   case class SqlSyntaxError(message: String) extends ConnectorError(message)
 
+  case class AccessDeniedError(message: String) extends ConnectorError(message)
+
   case class ConnectionTimeout(message: String) extends ConnectorError(message)
 
   case class QueryTimeout(message: String) extends ConnectorError(message)
