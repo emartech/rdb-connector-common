@@ -4,9 +4,9 @@ import akka.NotUsed
 import akka.stream.scaladsl.Source
 import com.emarsys.rdb.connector.common.notImplementedOperation
 import com.emarsys.rdb.connector.common.ConnectorResponse
-import com.emarsys.rdb.connector.common.defaults.{DefaultFieldValueConverters, FieldValueConverters}
+import com.emarsys.rdb.connector.common.defaults.{DefaultFieldValueConverters, FieldValueConverters, GroupWithLimitStage}
 import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, Record, UpdateDefinition}
-import com.emarsys.rdb.connector.common.models.Errors.FailedValidation
+import com.emarsys.rdb.connector.common.models.Errors.{FailedValidation, SimpleSelectIsNotGroupableFormat}
 import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors._
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
@@ -18,6 +18,7 @@ trait Connector {
 
   implicit val executionContext: ExecutionContext
   protected val fieldValueConverters: FieldValueConverters = DefaultFieldValueConverters
+  protected val groupLimitValidator: ValidateGroupLimitableQuery = ValidateGroupLimitableQuery
 
   val isErrorRetryable: PartialFunction[Throwable, Boolean] = {
     case _ => false
@@ -52,6 +53,19 @@ trait Connector {
   def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = notImplementedOperation
 
   def rawQuery(rawSql: String, timeout: FiniteDuration): ConnectorResponse[Int] = notImplementedOperation
+
+  final def selectWithGroupLimit(select: SimpleSelect, groupLimit: Int, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+    import ValidateGroupLimitableQuery.GroupLimitValidationResult._
+    groupLimitValidator.groupLimitableQueryValidation(select) match {
+      case Simple => simpleSelect(select.copy(limit = Option(groupLimit)), timeout)
+      case Groupable(references) => runSelectWithGroupLimit(select, groupLimit, references, timeout)
+      case NotGroupable => Future.successful(Left(SimpleSelectIsNotGroupableFormat))
+    }
+  }
+
+  protected def runSelectWithGroupLimit(select: SimpleSelect, groupLimit: Int, references: Seq[String], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+    simpleSelect(select, timeout).map(_.map(_.via(GroupWithLimitStage(references, groupLimit))))
+  }
 
   protected def rawUpdate(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = notImplementedOperation
 

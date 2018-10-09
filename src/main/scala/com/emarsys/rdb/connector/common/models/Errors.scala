@@ -26,4 +26,6 @@ object Errors {
 
   case object NotImplementedOperation extends ConnectorError
 
+  case object SimpleSelectIsNotGroupableFormat extends ConnectorError
+
 }

@@ -1,9 +1,13 @@
 package com.emarsys.rdb.connector.common.models
 
+import akka.NotUsed
+import akka.stream.scaladsl.Source
+import com.emarsys.rdb.connector.common
 import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.models.DataManipulation.FieldValueWrapper.StringValue
 import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, Record, UpdateDefinition}
-import com.emarsys.rdb.connector.common.models.Errors.FailedValidation
+import com.emarsys.rdb.connector.common.models.Errors.{FailedValidation, SimpleSelectIsNotGroupableFormat}
+import com.emarsys.rdb.connector.common.models.SimpleSelect.{AllField, TableName}
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors.{FieldModel, TableModel}
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult.InvalidOperationOnView
 import org.scalatest.{Matchers, WordSpecLike}
@@ -114,6 +118,69 @@ class ConnectorSpec extends WordSpecLike with Matchers {
   "#isErrorRetryable" should {
     "return false for any input" in {
       myConnector.isErrorRetryable(new Exception()) shouldBe false
+    }
+  }
+
+  "#selectWithGroupLimit" should {
+
+    val select = SimpleSelect(AllField, TableName("table"))
+
+    "use simpleSelect if validator choose Simple" in {
+      var calledWith: Seq[SimpleSelect] = Seq.empty
+      val validator = new ValidateGroupLimitableQuery {
+        override def groupLimitableQueryValidation(simpleSelect: SimpleSelect): ValidateGroupLimitableQuery.GroupLimitValidationResult = ValidateGroupLimitableQuery.GroupLimitValidationResult.Simple
+      }
+      val connector = new Connector {
+        override implicit val executionContext: ExecutionContext = executionCtx
+        override val groupLimitValidator = validator
+
+        override def simpleSelect(select: SimpleSelect, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+          calledWith +:= select
+          common.notImplementedOperation
+        }
+
+        override def close(): Future[Unit] = ???
+      }
+
+      connector.selectWithGroupLimit(select, 5, 10.minutes)
+      calledWith.size shouldBe 1
+      calledWith.head.limit shouldBe Some(5)
+    }
+
+    "use runSelectWithGroupLimit if validator choose Groupable" in {
+      var calledWith: Seq[SimpleSelect] = Seq.empty
+      val validator = new ValidateGroupLimitableQuery {
+        override def groupLimitableQueryValidation(simpleSelect: SimpleSelect): ValidateGroupLimitableQuery.GroupLimitValidationResult = ValidateGroupLimitableQuery.GroupLimitValidationResult.Groupable(Seq.empty)
+      }
+      val connector = new Connector {
+        override implicit val executionContext: ExecutionContext = executionCtx
+        override val groupLimitValidator = validator
+
+        override def runSelectWithGroupLimit(select: SimpleSelect, groupLimit: Int, references: Seq[String], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
+          calledWith +:= select
+          common.notImplementedOperation
+        }
+
+        override def close(): Future[Unit] = ???
+      }
+
+      connector.selectWithGroupLimit(select, 5, 10.minutes)
+      calledWith.size shouldBe 1
+      calledWith.head.limit shouldBe None
+    }
+
+    "drop error if validator choose NotGroupable" in {
+      val validator = new ValidateGroupLimitableQuery {
+        override def groupLimitableQueryValidation(simpleSelect: SimpleSelect): ValidateGroupLimitableQuery.GroupLimitValidationResult = ValidateGroupLimitableQuery.GroupLimitValidationResult.NotGroupable
+      }
+      val connector = new Connector {
+        override implicit val executionContext: ExecutionContext = executionCtx
+        override val groupLimitValidator = validator
+
+        override def close(): Future[Unit] = ???
+      }
+
+      Await.result(connector.selectWithGroupLimit(select, 5, 10.minutes), 1.second) shouldBe Left(SimpleSelectIsNotGroupableFormat)
     }
   }
 
