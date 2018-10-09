@@ -75,6 +75,18 @@ class GroupWithLimitStageSpec extends WordSpecLike with Matchers with BeforeAndA
       sinkProbe.expectNext(data2.head)
     }
 
+    "can handle empty results" in {
+      val result = Await.result(Source(List()).via(GroupWithLimitStage(Seq("id", "name"), 2)).runWith(Sink.seq), timeout)
+
+      result shouldBe List()
+    }
+
+    "can handle oneliner results" in {
+      val result = Await.result(Source(header :: Nil).via(GroupWithLimitStage(Seq("id", "name"), 2)).runWith(Sink.seq), timeout)
+
+      result shouldBe List()
+    }
+
   }
 
 }

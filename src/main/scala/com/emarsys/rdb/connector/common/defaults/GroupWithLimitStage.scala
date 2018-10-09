@@ -1,7 +1,7 @@
 package com.emarsys.rdb.connector.common.defaults
 
 import akka.NotUsed
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{Flow, Source}
 
 object GroupWithLimitStage {
 
@@ -12,8 +12,9 @@ object GroupWithLimitStage {
     Flow[Seq[String]]
       .prefixAndTail(1)
       .flatMapConcat { case (head, tail) =>
-        val header = head.head
-        tail.map(row => header zip row)
+        head.headOption.fold(Source.empty[Seq[(String, String)]]){ header =>
+          tail.map(row => header zip row)
+        }
       }
       .groupBy(1024, groupKey)
       .take(groupLimit)
