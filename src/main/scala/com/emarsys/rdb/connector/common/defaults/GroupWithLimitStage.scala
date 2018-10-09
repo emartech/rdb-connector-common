@@ -12,8 +12,8 @@ object GroupWithLimitStage {
     Flow[Seq[String]]
       .prefixAndTail(1)
       .flatMapConcat { case (head, tail) =>
-          val header = head.head
-          tail.map(x => header zip x)
+        val header = head.head
+        tail.map(row => header zip row)
       }
       .groupBy(1024, groupKey)
       .take(groupLimit)
@@ -25,12 +25,12 @@ object GroupWithLimitStage {
     () =>
       var wasHeader = false
       (l: Seq[(String, String)]) => {
-      if(wasHeader) {
-        List(l.map(_._2))
-      } else {
-        wasHeader = true
-        List(l.map(_._1), l.map(_._2))
+        if (wasHeader) {
+          List(l.map(_._2))
+        } else {
+          wasHeader = true
+          List(l.map(_._1), l.map(_._2))
+        }
       }
-    }
   }
 }

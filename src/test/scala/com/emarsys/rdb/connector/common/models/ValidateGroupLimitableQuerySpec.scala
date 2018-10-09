@@ -4,6 +4,7 @@ import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import org.scalatest.{Matchers, WordSpecLike}
 
 class ValidateGroupLimitableQuerySpec extends WordSpecLike with Matchers {
+
   import ValidateGroupLimitableQuery.GroupLimitValidationResult._
 
   "ValidateGroupLimitableQuery" should {
@@ -28,7 +29,7 @@ class ValidateGroupLimitableQuerySpec extends WordSpecLike with Matchers {
         And(Seq(EqualToValue(FieldName("a"), Value("x")), EqualToValue(FieldName("b"), Value("y")))),
         And(Seq(EqualToValue(FieldName("b"), Value("z")), EqualToValue(FieldName("a"), Value("w"))))
       ))))
-      ValidateGroupLimitableQuery.groupLimitableQueryValidation(select) shouldBe Groupable(Seq("b","a"))
+      ValidateGroupLimitableQuery.groupLimitableQueryValidation(select) shouldBe Groupable(Seq("b", "a"))
     }
 
     "OR has no inner And => Groupable" in {

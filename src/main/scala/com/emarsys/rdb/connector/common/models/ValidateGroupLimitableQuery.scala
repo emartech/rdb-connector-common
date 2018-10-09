@@ -4,25 +4,25 @@ import com.emarsys.rdb.connector.common.models.SimpleSelect.{And, EqualToValue, 
 import com.emarsys.rdb.connector.common.models.ValidateGroupLimitableQuery.GroupLimitValidationResult
 
 trait ValidateGroupLimitableQuery {
+
   import ValidateGroupLimitableQuery.GroupLimitValidationResult._
 
   def groupLimitableQueryValidation(simpleSelect: SimpleSelect): GroupLimitValidationResult = {
     def validateOr(list: Seq[WhereCondition]): GroupLimitValidationResult = {
-      val flatted = list.flatMap{
+      val flatted = list.flatMap {
         case And(l) => l
         case x => Seq(x)
       }
-      val filtered = flatted.flatMap{
-        case x:EqualToValue => Option(x)
-        case _ => None
+      val filtered = flatted.collect {
+        case x: EqualToValue => x
       }
-      if(filtered.size != flatted.size){
+      if (filtered.size != flatted.size) {
         NotGroupable
       } else {
         val grouped: Map[String, Seq[EqualToValue]] = filtered.groupBy(_.field.f)
         val sizes = grouped.map(_._2.size)
-        sizes.headOption.fold[GroupLimitValidationResult](NotGroupable){head =>
-          if(sizes.forall(_ == head) && head == list.size){
+        sizes.headOption.fold[GroupLimitValidationResult](NotGroupable) { head =>
+          if (sizes.forall(_ == head) && head == list.size) {
             Groupable(grouped.keys.toSeq)
           } else {
             NotGroupable

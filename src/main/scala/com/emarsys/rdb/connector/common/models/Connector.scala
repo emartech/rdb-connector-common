@@ -2,14 +2,13 @@ package com.emarsys.rdb.connector.common.models
 
 import akka.NotUsed
 import akka.stream.scaladsl.Source
-import com.emarsys.rdb.connector.common.notImplementedOperation
-import com.emarsys.rdb.connector.common.ConnectorResponse
 import com.emarsys.rdb.connector.common.defaults.{DefaultFieldValueConverters, FieldValueConverters, GroupWithLimitStage}
 import com.emarsys.rdb.connector.common.models.DataManipulation.{Criteria, Record, UpdateDefinition}
 import com.emarsys.rdb.connector.common.models.Errors.{FailedValidation, SimpleSelectIsNotGroupableFormat}
 import com.emarsys.rdb.connector.common.models.SimpleSelect._
 import com.emarsys.rdb.connector.common.models.TableSchemaDescriptors._
 import com.emarsys.rdb.connector.common.models.ValidateDataManipulation.ValidationResult
+import com.emarsys.rdb.connector.common.{ConnectorResponse, notImplementedOperation}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
@@ -80,9 +79,9 @@ trait Connector {
   protected def rawSearch(tableName: String, criteria: Criteria, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val query = SimpleSelect(
       fields = AllField,
-      table  = TableName(tableName),
-      where  = Some(createWhereCondition(criteria)),
-      limit  = limit
+      table = TableName(tableName),
+      where = Some(createWhereCondition(criteria)),
+      limit = limit
     )
 
     simpleSelect(query, timeout)
@@ -97,7 +96,7 @@ trait Connector {
         .mapValues(_.toSimpleSelectValue)
         .map {
           case (field, Some(value)) => EqualToValue(FieldName(field), value)
-          case (field, None)        => IsNull(FieldName(field))
+          case (field, None) => IsNull(FieldName(field))
         }.toSeq
     )
   }
@@ -131,8 +130,8 @@ trait Connector {
 
   private def validateAndExecute[T](
                                      validationFn: (String, Seq[T], Connector) => Future[ValidationResult],
-                                     tableName:String,
-                                     executionFn: (String,Seq[T]) => ConnectorResponse[Int],
+                                     tableName: String,
+                                     executionFn: (String, Seq[T]) => ConnectorResponse[Int],
                                      data: Seq[T]) = {
     validationFn(tableName, data, this).flatMap {
       case ValidationResult.Valid => executionFn(tableName, data)
