@@ -87,6 +87,19 @@ class GroupWithLimitStageSpec extends WordSpecLike with Matchers with BeforeAndA
       result shouldBe List()
     }
 
+    "can handle uppercase refs with lowercase headers" in {
+      val result = Await.result(Source(header :: data1 ++ data2).via(GroupWithLimitStage(Seq("ID", "NAME"), 2)).runWith(Sink.seq), timeout)
+
+      result shouldBe (header :: data1.take(2) ++ data2.take(2))
+    }
+
+    "can handle lowercase refs with uppercase headers" in {
+      val upperHeader = header.map(_.toUpperCase)
+      val result = Await.result(Source(upperHeader :: data1 ++ data2.take(2)).via(GroupWithLimitStage(Seq("id", "name"), 2)).runWith(Sink.seq), timeout)
+
+      result shouldBe (upperHeader :: data1.take(2) ++ data2.take(2))
+    }
+
   }
 
 }

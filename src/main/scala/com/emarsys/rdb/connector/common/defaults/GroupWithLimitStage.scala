@@ -6,8 +6,10 @@ import akka.stream.scaladsl.{Flow, Source}
 object GroupWithLimitStage {
 
   def apply[K](references: Seq[String], groupLimit: Int): Flow[Seq[String], Seq[String], NotUsed] = {
+    val upperRefs = references.map(_.toUpperCase)
+
     def groupKey(xs: Seq[(String, String)]) =
-      xs.filter(x => references.contains(x._1)).map(_._2)
+      xs.filter(x => upperRefs.contains(x._1.toUpperCase)).map(_._2)
 
     Flow[Seq[String]]
       .prefixAndTail(1)
