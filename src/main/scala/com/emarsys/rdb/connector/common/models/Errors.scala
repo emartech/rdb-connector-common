@@ -28,4 +28,6 @@ object Errors {
 
   case object SimpleSelectIsNotGroupableFormat extends ConnectorError
 
+  case object TooManyQueries extends ConnectorError
+
 }
