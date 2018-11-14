@@ -29,36 +29,36 @@ trait Connector {
     "{}"
   }
 
-  def testConnection(): ConnectorResponse[Unit] = notImplementedOperation
+  def testConnection(): ConnectorResponse[Unit] = notImplementedOperation(generateNotImplementedMessage("testConnection"))
 
-  def listTables(): ConnectorResponse[Seq[TableModel]] = notImplementedOperation
+  def listTables(): ConnectorResponse[Seq[TableModel]] = notImplementedOperation(generateNotImplementedMessage("listTables"))
 
-  def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = notImplementedOperation
+  def listTablesWithFields(): ConnectorResponse[Seq[FullTableModel]] = notImplementedOperation(generateNotImplementedMessage("listTablesWithFields"))
 
-  def listFields(table: String): ConnectorResponse[Seq[FieldModel]] = notImplementedOperation
+  def listFields(table: String): ConnectorResponse[Seq[FieldModel]] = notImplementedOperation(generateNotImplementedMessage("listFields"))
 
-  def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean] = notImplementedOperation
+  def isOptimized(table: String, fields: Seq[String]): ConnectorResponse[Boolean] = notImplementedOperation(generateNotImplementedMessage("isOptimized"))
 
-  def simpleSelect(select: SimpleSelect, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def simpleSelect(select: SimpleSelect, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation(generateNotImplementedMessage("simpleSelect"))
 
-  def rawSelect(rawSql: String, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def rawSelect(rawSql: String, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation(generateNotImplementedMessage("rawSelect"))
 
-  def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = notImplementedOperation
+  def validateRawSelect(rawSql: String): ConnectorResponse[Unit] = notImplementedOperation(generateNotImplementedMessage("validateRawSelect"))
 
-  def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def analyzeRawSelect(rawSql: String): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation(generateNotImplementedMessage("analyzeRawSelect"))
 
-  def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], timeout: FiniteDuration, allowNullFieldValue: Boolean = false): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation
+  def projectedRawSelect(rawSql: String, fields: Seq[String], limit: Option[Int], timeout: FiniteDuration, allowNullFieldValue: Boolean = false): ConnectorResponse[Source[Seq[String], NotUsed]] = notImplementedOperation(generateNotImplementedMessage("projectedRawSelect"))
 
-  def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = notImplementedOperation
+  def validateProjectedRawSelect(rawSql: String, fields: Seq[String]): ConnectorResponse[Unit] = notImplementedOperation(generateNotImplementedMessage("validateProjectedRawSelect"))
 
-  def rawQuery(rawSql: String, timeout: FiniteDuration): ConnectorResponse[Int] = notImplementedOperation
+  def rawQuery(rawSql: String, timeout: FiniteDuration): ConnectorResponse[Int] = notImplementedOperation(generateNotImplementedMessage("rawQuery"))
 
   final def selectWithGroupLimit(select: SimpleSelect, groupLimit: Int, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     import ValidateGroupLimitableQuery.GroupLimitValidationResult._
     groupLimitValidator.groupLimitableQueryValidation(select) match {
       case Simple => simpleSelect(select.copy(limit = Option(groupLimit)), timeout)
       case Groupable(references) => runSelectWithGroupLimit(select, groupLimit, references, timeout)
-      case NotGroupable => Future.successful(Left(SimpleSelectIsNotGroupableFormat))
+      case NotGroupable => Future.successful(Left(SimpleSelectIsNotGroupableFormat(select.toString)))
     }
   }
 
@@ -66,15 +66,15 @@ trait Connector {
     simpleSelect(select, timeout).map(_.map(_.via(GroupWithLimitStage(references, groupLimit))))
   }
 
-  protected def rawUpdate(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = notImplementedOperation
+  protected def rawUpdate(tableName: String, definitions: Seq[UpdateDefinition]): ConnectorResponse[Int] = notImplementedOperation(generateNotImplementedMessage("rawUpdate"))
 
-  protected def rawInsertData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation
+  protected def rawInsertData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation(generateNotImplementedMessage("rawInsertData"))
 
-  protected def rawReplaceData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation
+  protected def rawReplaceData(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation(generateNotImplementedMessage("rawReplaceData"))
 
-  protected def rawUpsert(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation
+  protected def rawUpsert(tableName: String, definitions: Seq[Record]): ConnectorResponse[Int] = notImplementedOperation(generateNotImplementedMessage("rawUpsert"))
 
-  protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = notImplementedOperation
+  protected def rawDelete(tableName: String, criteria: Seq[Criteria]): ConnectorResponse[Int] = notImplementedOperation(generateNotImplementedMessage("rawDelete"))
 
   protected def rawSearch(tableName: String, criteria: Criteria, limit: Option[Int], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
     val query = SimpleSelect(
@@ -137,6 +137,10 @@ trait Connector {
       case ValidationResult.Valid => executionFn(tableName, data)
       case failedValidationResult => Future.successful(Left(FailedValidation(failedValidationResult)))
     }
+  }
+
+  private def generateNotImplementedMessage(operation: String): String = {
+    s"$operation not implemented"
   }
 }
 

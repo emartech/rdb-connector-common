@@ -24,10 +24,10 @@ object Errors {
 
   case class FailedValidation(validationResult: ValidationResult) extends ConnectorError
 
-  case object NotImplementedOperation extends ConnectorError
+  case class NotImplementedOperation(message: String) extends ConnectorError
 
-  case object SimpleSelectIsNotGroupableFormat extends ConnectorError
+  case class SimpleSelectIsNotGroupableFormat(message: String) extends ConnectorError
 
-  case object TooManyQueries extends ConnectorError
+  case class TooManyQueries(message: String) extends ConnectorError
 
 }

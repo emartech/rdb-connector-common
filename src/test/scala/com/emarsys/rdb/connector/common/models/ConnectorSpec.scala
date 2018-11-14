@@ -136,7 +136,7 @@ class ConnectorSpec extends WordSpecLike with Matchers {
 
         override def simpleSelect(select: SimpleSelect, timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
           calledWith +:= select
-          common.notImplementedOperation
+          common.notImplementedOperation("simpleSelect")
         }
 
         override def close(): Future[Unit] = ???
@@ -158,7 +158,7 @@ class ConnectorSpec extends WordSpecLike with Matchers {
 
         override def runSelectWithGroupLimit(select: SimpleSelect, groupLimit: Int, references: Seq[String], timeout: FiniteDuration): ConnectorResponse[Source[Seq[String], NotUsed]] = {
           calledWith +:= select
-          common.notImplementedOperation
+          common.notImplementedOperation("simpleSelect")
         }
 
         override def close(): Future[Unit] = ???
@@ -180,7 +180,7 @@ class ConnectorSpec extends WordSpecLike with Matchers {
         override def close(): Future[Unit] = ???
       }
 
-      Await.result(connector.selectWithGroupLimit(select, 5, 10.minutes), 1.second) shouldBe Left(SimpleSelectIsNotGroupableFormat)
+      Await.result(connector.selectWithGroupLimit(select, 5, 10.minutes), 1.second) shouldBe Left(SimpleSelectIsNotGroupableFormat("SimpleSelect(AllField,TableName(table),None,None,None)"))
     }
   }
 

@@ -7,5 +7,5 @@ import scala.concurrent.Future
 package object common {
   type ConnectorResponse[T] = Future[Either[ConnectorError,T]]
 
-  def notImplementedOperation[T]: ConnectorResponse[T] = Future.successful(Left(NotImplementedOperation))
+  def notImplementedOperation[T](message: String): ConnectorResponse[T] = Future.successful(Left(NotImplementedOperation(message)))
 }
